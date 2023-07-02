@@ -1,53 +1,130 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
-        <title>Babylon.js sample code</title>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>AAS UR Digital Twin</title>
+    <!-- Babylon.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+    <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+    <script src="https://cdn.babylonjs.com/recast.js"></script>
+    <script src="https://cdn.babylonjs.com/ammo.js"></script>
+    <script src="https://cdn.babylonjs.com/havok/HavokPhysics_umd.js"></script>
+    <script src="https://cdn.babylonjs.com/cannon.js"></script>
+    <script src="https://cdn.babylonjs.com/Oimo.js"></script>
+    <script src="https://cdn.babylonjs.com/earcut.min.js"></script>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+    <script src="https://cdn.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+    <script src="https://cdn.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+    <script src="https://cdn.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <script src="https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+    <!-- Apache Echarts.js -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+    <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts-gl@2/dist/echarts-gl.min.js"></script>
+    <!-- Websocket -->
+    <!-- style -->
+    <style>
+        html,
+        body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: rgb(0, 0, 0);
+        }
 
-        <!-- Babylon.js -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
-        <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
-        <script src="https://cdn.babylonjs.com/recast.js"></script>
-        <script src="https://cdn.babylonjs.com/ammo.js"></script>
-        <script src="https://cdn.babylonjs.com/havok/HavokPhysics_umd.js"></script>
-        <script src="https://cdn.babylonjs.com/cannon.js"></script>
-        <script src="https://cdn.babylonjs.com/Oimo.js"></script>
-        <script src="https://cdn.babylonjs.com/earcut.min.js"></script>
-        <script src="https://cdn.babylonjs.com/babylon.js"></script>
-        <script src="https://cdn.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
-        <script src="https://cdn.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
-        <script src="https://cdn.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
-        <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
-        <script src="https://cdn.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
-        <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
-        <script src="https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
 
-        <style>
-            html, body {
-                overflow: hidden;
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-            }
+        #canvasZone {
+            float: left;
+            float: left;
+            width: 66%;
+            height: 66%;
+        }
 
-            #renderCanvas {
-                width: 100%;
-                height: 100%;
-                touch-action: none;
-            }
-            
-            #canvasZone {
-                width: 100%;
-                height: 100%;
-            }
-        </style>
-    </head>
+        .chartZone {
+            float: left;
+            width: 33.3%;
+            height: 33.3%;
+        }
+    </style>
+</head>
+
 <body>
+    <!--DOM-->
     <div id="canvasZone"><canvas id="renderCanvas"></canvas></div>
-    <script>
+    <div id="chart1" , class="chartZone"></div>
+    <div id="chart2" , class="chartZone"></div>
+    <div id="chart3" , class="chartZone"></div>
+    <div id="chart4" , class="chartZone"></div>
+    <div id="chart5" , class="chartZone"></div>
+    <!-- Script -->
+    <script type="text/javascript">
+        // babylon
+        var mesh_folder = "https://raw.githubusercontent.com/wuyewenhao/GLBRepo/master/";
+        var mesh_file_ur5e = "ur5e.glb";
+        var engine = null;
+        var scene = null;
+        var sceneToRender = null;
         var canvas = document.getElementById("renderCanvas");
+
+        var createDefaultEngine = function () {
+            return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, disableWebGL2Support: false });
+        };
+
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+            var camera = new BABYLON.ArcRotateCamera("camera", BABYLON.Tools.ToRadians(90), BABYLON.Tools.ToRadians(65), 10, BABYLON.Vector3.Zero(), scene);
+            camera.attachControl(canvas, true);
+            var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.7;
+            var ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 6, height: 6 }, scene);
+            let groundMaterial = new BABYLON.StandardMaterial("Ground Material", scene);
+            ground.material = groundMaterial;
+            let groundTexture = new BABYLON.Texture(Assets.textures.checkerboard_basecolor_png.rootUrl, scene);
+            ground.material.diffuseTexture = groundTexture;
+
+            BABYLON.SceneLoader.ImportMesh("", mesh_folder, mesh_file_ur5e, scene, function (newMeshes) {
+                newMeshes[0].scaling = new BABYLON.Vector3(3, 3, 3);
+            });
+
+            // UI
+            var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+            var UiPanel = new BABYLON.GUI.StackPanel();
+            UiPanel.width = "220px";
+            UiPanel.fontSize = "14px";
+            UiPanel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+            UiPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+            advancedTexture.addControl(UiPanel);
+
+            var button = BABYLON.GUI.Button.CreateSimpleButton("but0", "Shake");
+            button.paddingTop = "10px";
+            button.width = "100px";
+            button.height = "50px";
+            button.color = "white";
+            button.background = "green";
+            button.onPointerDownObservable.add(function () {
+                var wsc = new WebSocket("ws://localhost:8586/");
+                wsc.onopen = function () { s };
+                wsc.onerror = function () {
+                    alert('connect failure');
+                };
+                wsc.onclose = function () {
+                    alert('disconnected, bye bye');
+                };
+                wsc.onmessage = function (msg) { };
+            });
+            UiPanel.addControl(button);
+            return scene;
+        };
 
         var startRenderLoop = function (engine, canvas) {
             engine.runRenderLoop(function () {
@@ -55,64 +132,590 @@
                     sceneToRender.render();
                 }
             });
-        }
+        };
 
-        var engine = null;
-        var scene = null;
-        var sceneToRender = null;
-        var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
-        var createScene = function () {
-    // This creates a basic Babylon Scene object (non-mesh)
-    var scene = new BABYLON.Scene(engine);
+        // echarts
+        var chart = [
+            document.getElementById('chart1'),
+            document.getElementById('chart2'),
+            document.getElementById('chart3'),
+            document.getElementById('chart4'),
+            document.getElementById('chart5')
+        ];
+        var myChart = [];
+        var rtde = [];
 
-    var camera = new BABYLON.ArcRotateCamera("camera", BABYLON.Tools.ToRadians(90), BABYLON.Tools.ToRadians(65), 10, BABYLON.Vector3.Zero(), scene);
-
-    // This attaches the camera to the canvas
-    camera.attachControl(canvas, true);
-
-    // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-
-    // Default intensity is 1. Let's dim the light a small amount
-    light.intensity = 0.7;
-
-    // Our built-in 'ground' shape.
-    var ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 6, height: 6}, scene);
-    let groundMaterial = new BABYLON.StandardMaterial("Ground Material", scene);
-    ground.material = groundMaterial;
-    let groundTexture = new BABYLON.Texture(Assets.textures.checkerboard_basecolor_png.rootUrl, scene);
-    ground.material.diffuseTexture = groundTexture;
-
-    BABYLON.SceneLoader.ImportMesh("", Assets.meshes.Yeti.rootUrl, Assets.meshes.Yeti.filename, scene, function(newMeshes){
-        newMeshes[0].scaling = new BABYLON.Vector3(0.1, 0.1, 0.1);
-    });
-
-    return scene;
-};
-                window.initFunction = async function() {
-                    
-                    
-                    
-                    var asyncEngineCreation = async function() {
-                        try {
-                        return createDefaultEngine();
-                        } catch(e) {
-                        console.log("the available createEngine function failed. Creating the default engine instead");
-                        return createDefaultEngine();
+        var updateChart = function (data) {
+            var option = [
+                // cartesian pos 3d
+                {
+                    // dimensions: dimensions,
+                    dataset: {
+                        source: data,
+                    },
+                    title: {
+                        text: "TCP Pos"
+                    },
+                    tooltip: {},
+                    // backgroundColor: '#fff',
+                    xAxis3D: {
+                        type: 'value',
+                        axisLabel: {
+                            color: '#fff'
                         }
-                    }
+                    },
+                    yAxis3D: {
+                        type: 'value',
+                        axisLabel: {
+                            color: '#fff'
+                        }
+                    },
+                    zAxis3D: {
+                        type: 'value',
+                        axisLabel: {
+                            color: '#fff'
+                        }
+                    },
+                    grid3D: {
+                        viewControl: {
+                            projection: 'orthographic',
+                        }
+                    },
+                    series: [
+                        {
+                            type: 'line3D',
+                            encode: {
+                                x: 1,
+                                y: 2,
+                                z: 3,
+                                tooltip: [1, 2, 3]
+                            },
+                            // data: xyz,
+                            lineStyle: {
+                                width: 4
+                            }
+                        }
+                    ]
+                },
+                //cartesian pos
+                {
+                    // dimensions: dimensions,
+                    dataset: {
+                        source: data,
+                    },
+                    title: {
+                        text: 'TCP Pos'
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    xAxis: { type: 'value' },
+                    yAxis: { type: 'value' },
+                    series: [
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'x',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 1,
+                            },
+                            itemName: 0,
+                            tooltip: [1],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'y',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 2,
+                            },
+                            itemName: 0,
+                            tooltip: [2],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'z',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 3,
+                            },
+                            itemName: 0,
+                            tooltip: [3],
+                        },
+                    ]
+                },
+                // joint q
+                {
+                    dataset: {
+                        source: data,
+                    },
+                    title: {
+                        text: 'Joint Pos'
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    xAxis: { type: 'value' },
+                    yAxis: { type: 'value' },
+                    series: [
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'q1',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 7,
+                            },
+                            itemName: 0,
+                            tooltip: [7],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'q2',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 8,
+                            },
+                            itemName: 0,
+                            tooltip: [8],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'q3',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 9,
+                            },
+                            itemName: 0,
+                            tooltip: [9],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'q4',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 10,
+                            },
+                            itemName: 0,
+                            tooltip: [10],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'q5',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 11,
+                            },
+                            itemName: 0,
+                            tooltip: [11],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'q6',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 12,
+                            },
+                            itemName: 0,
+                            tooltip: [12],
+                        },
+                    ]
+                },
+                // joint qq
+                {
+                    dataset: {
+                        source: data,
+                    },
+                    title: {
+                        text: 'Joint Acc'
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    xAxis: { type: 'value' },
+                    yAxis: { type: 'value' },
+                    series: [
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'qq1',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 13,
+                            },
+                            itemName: 0,
+                            tooltip: [13],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'qq2',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 14,
+                            },
+                            itemName: 0,
+                            tooltip: [14],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'qq3',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 15,
+                            },
+                            itemName: 0,
+                            tooltip: [15],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'qq4',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 16,
+                            },
+                            itemName: 0,
+                            tooltip: [16],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'qq5',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 17,
+                            },
+                            itemName: 0,
+                            tooltip: [17],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'qq6',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 18,
+                            },
+                            itemName: 0,
+                            tooltip: [18],
+                        },
+                    ]
+                },
+                // joint qqq
+                {
+                    dataset: {
+                        source: data,
+                    },
+                    title: {
+                        text: 'Joint Jerk'
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    xAxis: { type: 'value' },
+                    yAxis: { type: 'value' },
+                    series: [
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'qqq1',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 19,
+                            },
+                            itemName: 0,
+                            tooltip: [19],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'qqq2',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 20,
+                            },
+                            itemName: 0,
+                            tooltip: [20],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'qqq3',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 21,
+                            },
+                            itemName: 0,
+                            tooltip: [21],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'qqq4',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 22,
+                            },
+                            itemName: 0,
+                            tooltip: [22],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'qqq5',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 23,
+                            },
+                            itemName: 0,
+                            tooltip: [23],
+                        },
+                        {
+                            type: 'line',
+                            showSymbol: false,
+                            name: 'qqq6',
+                            labelLayout: {
+                                moveOverlap: 'shiftY'
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            encode: {
+                                x: 0,
+                                y: 24,
+                            },
+                            itemName: 0,
+                            tooltip: [24],
+                        },
+                    ]
+                },
+            ];
+            myChart[0].setOption(option[0]);
+            myChart[1].setOption(option[1]);
+            myChart[2].setOption(option[2]);
+            myChart[3].setOption(option[3]);
+            myChart[4].setOption(option[4]);
+        };
 
-                    window.engine = await asyncEngineCreation();
-        if (!engine) throw 'engine should not be null.';
-        startRenderLoop(engine, canvas);
-        window.scene = createScene();};
-        initFunction().then(() => {sceneToRender = scene                    
+        // window init
+        window.initFunction = async function () {
+            var asyncEngineCreation = async function () {
+                try {
+                    return createDefaultEngine();
+                } catch (e) {
+                    console.log("the available createEngine function failed. Creating the default engine instead");
+                    return createDefaultEngine();
+                }
+            }
+
+            window.engine = await asyncEngineCreation();
+            if (!engine) throw 'engine should not be null.';
+            startRenderLoop(engine, canvas);
+            window.scene = createScene();
+        };
+
+        initFunction().then(() => {
+            sceneToRender = scene;
+            myChart = [
+                echarts.init(chart[0], 'dark'),
+                echarts.init(chart[1], 'dark'),
+                echarts.init(chart[2], 'dark'),
+                echarts.init(chart[3], 'dark'),
+                echarts.init(chart[4], 'dark'),
+            ];
+            updateChart(rtde0);
+
+            // websocket
+            var ws = new WebSocket("ws://localhost:8585/");
+            ws.onopen = function () {
+                alert('connect success');
+                ws.send('hello')
+            };
+            ws.onerror = function () {
+                alert('connect failure');
+            };
+            ws.onclose = function () {
+                alert('disconnected, bye bye');
+            };
+            ws.onmessage = function (msg) {
+                var data = JSON.parse(msg.data);
+                rtde.push(
+                    [
+                        data['no'],
+                        //tcp
+                        data['actual_TCP_pose'][0],
+                        data['actual_TCP_pose'][1],
+                        data['actual_TCP_pose'][2],
+                        data['actual_TCP_pose'][3],
+                        data['actual_TCP_pose'][4],
+                        data['actual_TCP_pose'][5],
+                        //q
+                        data['actual_q'][0],
+                        data['actual_q'][1],
+                        data['actual_q'][2],
+                        data['actual_q'][3],
+                        data['actual_q'][4],
+                        data['actual_q'][5],
+                        //qq
+                        data['actual_qd'][0],
+                        data['actual_qd'][1],
+                        data['actual_qd'][2],
+                        data['actual_qd'][3],
+                        data['actual_qd'][4],
+                        data['actual_qd'][5],
+                        //qqq
+                        data['actual_qdd'][0],
+                        data['actual_qdd'][1],
+                        data['actual_qdd'][2],
+                        data['actual_qdd'][3],
+                        data['actual_qdd'][4],
+                        data['actual_qdd'][5],
+                    ]
+                );
+                updateChart(rtde);
+            };
         });
 
         // Resize
         window.addEventListener("resize", function () {
             engine.resize();
+            myChart[0].resize();
+            myChart[1].resize();
+            myChart[2].resize();
+            myChart[3].resize();
+            myChart[4].resize();
         });
     </script>
 </body>
+
 </html>
